@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DNA Tesla Valve Simulation</title>
+<style>
+  body {
+	font-family: monospace;
+	background: #1e1e1e;
+	color: #f0f0f0;
+	padding: 20px;
+  }
+  .node {
+	margin-bottom: 10px;
+  }
+  .bar {
+	display: inline-block;
+	height: 12px;
+	background: #4caf50;
+	vertical-align: middle;
+  }
+  .label {
+	display: inline-block;
+	width: 80px;
+  }
+  .replication {
+	color: #ff9800;
+	margin: 15px 0;
+  }
+</style>
+</head>
+<body>
+<h2>DNA Tesla Valve Simulation</h2>
+<div id="simulation"></div>
+
+<script>
+class DNATeslaValve {
+	constructor(sequence = null) {
+		this.bases = ['A','T','C','G'];
+		this.complement = {'A':'T','T':'A','C':'G','G':'C'};
+		this.sequence = sequence || Array.from({length:10}, () => this.bases[Math.floor(Math.random()*4)]);
+		this.forwardResistance = {'A':1, 'T':2, 'C':3, 'G':4};
+		this.backwardResistance = {'A':4, 'T':3, 'C':2, 'G':1};
+	}
+
+	flow(inputFlow, index, direction) {
+		const base = this.sequence[index % this.sequence.length];
+		const resistance = direction === 'left' ? this.forwardResistance[base] : this.backwardResistance[base];
+		return {flow: inputFlow / resistance, base};
+	}
+
+	replicateSequence() {
+		this.sequence = this.sequence.map(b => this.complement[b]);
+	}
+}
+
+const valve = new DNATeslaValve();
+const inputFlow = 100;
+let timestep = 0;
+const simulationDiv = document.getElementById('simulation');
+
+function simulateStep() {
+	simulationDiv.innerHTML = ''; // clear previous step
+	valve.sequence.forEach((_, i) => {
+		const left = valve.flow(inputFlow, i, 'left');
+		const right = valve.flow(inputFlow, i, 'right');
+
+		const nodeDiv = document.createElement('div');
+		nodeDiv.className = 'node';
+		nodeDiv.innerHTML = `<span class="label">Node ${i}:</span> Base ${left.base}/${right.base}<br>
+							 Left: <div class="bar" style="width:${Math.min(left.flow*2, 200)}px"></div> ${left.flow.toFixed(2)}<br>
+							 Right: <div class="bar" style="width:${Math.min(right.flow*2, 200)}px; background:#2196f3;"></div> ${right.flow.toFixed(2)}`;
+		simulationDiv.appendChild(nodeDiv);
+	});
+
+	timestep++;
+	if (timestep % valve.sequence.length === 0) {
+		valve.replicateSequence();
+		const repDiv = document.createElement('div');
+		repDiv.className = 'replication';
+		repDiv.textContent = '=== Sequence replicated! ===';
+		simulationDiv.appendChild(repDiv);
+	}
+}
+
+// Run simulation every 1 second
+setInterval(simulateStep, 1000);
+</script>
+</body>
+</html>
